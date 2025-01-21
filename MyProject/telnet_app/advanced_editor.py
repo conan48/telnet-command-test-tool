@@ -318,3 +318,7 @@ class AdvancedEditor(tk.Toplevel):
         self.text_editor.mark_set("insert", next_line)
         # 确保滚动到可见范围
         self.text_editor.see(next_line)
+
+    def _on_close(self):
+        """处理窗口关闭事件"""
+        self.destroy()  # 关闭窗口
