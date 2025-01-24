@@ -80,6 +80,5 @@ class CommandEditor:
                 self.parent.stop_event.set()
                 break
 
-        # 更新图表和保存Excel
-        self.parent.chart_manager.update_chart(self.parent.test_results)
+        # 保存Excel
         self.parent.save_excel_if_needed() 

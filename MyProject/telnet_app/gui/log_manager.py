@@ -11,7 +11,7 @@ class LogManager:
         self.log_queue = Queue()
         
         # 创建日志文本控件容器框架
-        self.log_frame = tk.Frame(parent.lower_left, bg='#f0f0f0')
+        self.log_frame = ttk.Frame(parent.lower_left)
         self.log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # 创建日志文本控件
@@ -20,42 +20,14 @@ class LogManager:
             wrap=tk.WORD,
             width=60,
             height=20,
-            font=('Consolas', 10),
-            bg='#ffffff',
-            fg='#2c3e50',
-            insertbackground='#2c3e50',
-            selectbackground='#bdc3c7',
-            selectforeground='#2c3e50',
-            relief=tk.FLAT,
-            padx=10,
-            pady=5
+            font=('Consolas', 10)
         )
         self.log_text.pack(fill=tk.BOTH, expand=True)
         
         # 配置标签样式
-        self.log_text.tag_config("RESULT_PASS", foreground="#ffffff", background="#27ae60")
-        self.log_text.tag_config("RESULT_FAIL", foreground="#ffffff", background="#e74c3c")
-        self.log_text.tag_config("NORMAL", foreground="#2c3e50")
-        self.log_text.tag_config("CMD", foreground="#2980b9")
-        self.log_text.tag_config("DATA", foreground="#8e44ad")
-        
-        # 自定义滚动条样式
-        style = ttk.Style()
-        style.configure("Custom.Vertical.TScrollbar",
-                      background="#bdc3c7",
-                      troughcolor="#f0f0f0",
-                      width=10,
-                      relief=tk.FLAT)
-        
-        # 替换默认滚动条
-        self.scrollbar = ttk.Scrollbar(
-            self.log_text,
-            orient=tk.VERTICAL,
-            style="Custom.Vertical.TScrollbar",
-            command=self.log_text.yview
-        )
-        self.log_text.configure(yscrollcommand=self.scrollbar.set)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.log_text.tag_config("RESULT_PASS", foreground="green")
+        self.log_text.tag_config("RESULT_FAIL", foreground="red")
+        self.log_text.tag_config("NORMAL", foreground="black")
         
         # 启动日志更新定时器
         parent.after(200, self._update_log_text)
@@ -65,10 +37,8 @@ class LogManager:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if message.lower().startswith('cmd:'):
             line = f"[{timestamp}] {message}"
-            tag = "CMD"
         elif message.lower().startswith('data:'):
             line = f"                      {message}"
-            tag = "DATA"
         elif message.lower().startswith('result:'):
             line = f"                      {message}"
         else:
@@ -81,17 +51,18 @@ class LogManager:
             line_to_insert, tag = self.log_queue.get()
             
             self.log_text.insert(tk.END, line_to_insert + "\n", tag)
-            if self.parent.is_auto_scroll.get():
+            if hasattr(self.parent, 'is_auto_scroll') and self.parent.is_auto_scroll.get():
                 self.log_text.see(tk.END)
 
             # 如果需要则写入文件
-            mode = self.parent.output_mode_var.get()
-            if mode in ("log", "both") and self.parent.log_file_path:
-                try:
-                    with open(self.parent.log_file_path, "a", encoding="utf-8") as f:
-                        f.write(line_to_insert + "\n")
-                except Exception as e:
-                    self.write_log(f"写入日志文件失败：{e}")
+            if hasattr(self.parent, 'output_mode_var') and hasattr(self.parent, 'log_file_path'):
+                mode = self.parent.output_mode_var.get()
+                if mode in ("log", "both") and self.parent.log_file_path:
+                    try:
+                        with open(self.parent.log_file_path, "a", encoding="utf-8") as f:
+                            f.write(line_to_insert + "\n")
+                    except Exception as e:
+                        self.write_log(f"写入日志文件失败：{e}")
 
         self.parent.after(200, self._update_log_text)
 

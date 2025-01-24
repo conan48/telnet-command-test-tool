@@ -149,7 +149,7 @@ class AdvancedEditor(tk.Toplevel):
     def load_from_current_file(self):
         """从 current_file_path 读取"""
         if not self.current_file_path:
-            messagebox.showwarning("提示", "尚未关联任何文件路径，请先在主界面选择命令文件或‘另存为’。")
+            messagebox.showwarning("提示", "尚未关联任何文件路径，请先在主界面选择命令文件或'另存为'。")
             return
         if not os.path.isfile(self.current_file_path):
             messagebox.showwarning("提示", f"文件 {self.current_file_path} 不存在。")
@@ -159,7 +159,7 @@ class AdvancedEditor(tk.Toplevel):
     def save_to_current_file(self):
         """保存到 current_file_path"""
         if not self.current_file_path:
-            messagebox.showwarning("提示", "尚未关联任何文件路径，请先使用‘另存为’。")
+            messagebox.showwarning("提示", "尚未关联任何文件路径，请先使用'另存为'。")
             return
         content = self.text_editor.get('1.0', tk.END)
         try:
@@ -271,53 +271,29 @@ class AdvancedEditor(tk.Toplevel):
 
     def _send_next_line(self):
         """
-        “逐行发送”按钮:
-        1. 获取当前光标所在行
-        2. 高亮该行
-        3. 调用回调发送
-        4. 移动光标到下一行
+        逐行发送：从当前光标所在行开始发送
         """
-        if not self.send_callback:
-            messagebox.showinfo("提示", "未实现发送回调函数。")
-            return
-
         # 获取当前光标所在行
-        cursor_index = self.text_editor.index("insert")
-        row_str = cursor_index.split('.')[0]
-        row = int(row_str)
-
-        # 获取总行数
-        total_lines = int(self.text_editor.index('end').split('.')[0]) - 1
-        if total_lines < 1:
-            messagebox.showwarning("提示", "没有可发送的命令行")
+        current_line = self.text_editor.get("insert linestart", "insert lineend")
+        if not current_line.strip():
+            self.master.log_manager.write_log("当前行为空，跳过")
             return
 
-        # 如果当前行超过范围，则重置到第1行
-        if row < 1 or row > total_lines:
-            row = 1
+        # 发送当前行
+        if self.send_callback:
+            self.send_callback("single_line_flow", current_line, self.text_editor)
 
-        # 高亮该行
-        self.text_editor.tag_remove(self.highlight_tag, "1.0", "end")
-        line_start = f"{row}.0"
-        line_end = f"{row}.end"
-        self.text_editor.tag_add(self.highlight_tag, line_start, line_end)
+        # 移动到下一行
+        self.text_editor.mark_set("insert", "insert+1l linestart")
+        self.text_editor.see("insert")  # 确保光标可见
 
-        # 获取当前行内容
-        line_content = self.text_editor.get(line_start, line_end).strip()
-        if not line_content:
-            self.write_log("当前行为空，跳过")
-        else:
-            # 发送
-            self.send_callback("single_line_flow", line_content, self.text_editor)
-
-        # 将光标移动到下一行
-        row += 1
-        if row > total_lines:
-            row = 1
-        next_line = f"{row}.0"
-        self.text_editor.mark_set("insert", next_line)
-        # 确保滚动到可见范围
-        self.text_editor.see(next_line)
+        # 高亮当前行
+        self.text_editor.tag_remove(self.highlight_tag, "1.0", tk.END)
+        self.text_editor.tag_add(
+            self.highlight_tag,
+            "insert linestart",
+            "insert lineend"
+        )
 
     def _on_close(self):
         """处理窗口关闭事件"""
